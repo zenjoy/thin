@@ -8,7 +8,7 @@ module Thin
       end
 
       def connect
-        @signature = EventMachine.attach_server(@descriptor, nil, Connection, &method(:initialize_connection))
+        @signature = EventMachine.attach_server(@descriptor, Connection, &method(:initialize_connection))
       end
 
       def disconnect

@@ -103,6 +103,7 @@ module Thin
         case arg
         when Fixnum, /^\d+$/ then port    = arg.to_i
         when String          then host    = arg
+        when Socket          then host    = arg
         when Hash            then options = arg
         else
           @app = arg if arg.respond_to?(:call)
@@ -243,12 +244,12 @@ module Thin
         when options.has_key?(:backend)
           raise ArgumentError, ":backend must be a class" unless options[:backend].is_a?(Class)
           options[:backend].new(host, port, options)
+        when options.has_key?(:reuse)
+          Backends::ReusedTcpServer.new(host) # pass the already opened socked
         when options.has_key?(:swiftiply)
           Backends::SwiftiplyClient.new(host, port, options)
         when host.include?('/')
           Backends::UnixServer.new(host)
-         when options.has_key?(:reuse)
-          Backends::ReusedTcpServer.new(port) # file descriptor number
         else
           Backends::TcpServer.new(host, port)
         end
