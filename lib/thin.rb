@@ -18,14 +18,15 @@ module Thin
   autoload :Runner,             "thin/runner"
   autoload :Server,             "thin/server"
   autoload :Stats,              "thin/stats"
-  
+
   module Backends
     autoload :Base,             "thin/backends/base"
     autoload :SwiftiplyClient,  "thin/backends/swiftiply_client"
     autoload :TcpServer,        "thin/backends/tcp_server"
+    autoload :ReusedTcpServer,  "thin/backends/reused_tcp_server"
     autoload :UnixServer,       "thin/backends/unix_server"
   end
-  
+
   module Controllers
     autoload :Cluster,          "thin/controllers/cluster"
     autoload :Controller,       "thin/controllers/controller"

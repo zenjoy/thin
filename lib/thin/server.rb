@@ -12,7 +12,7 @@ module Thin
   # == UNIX domain server
   # Create a new UNIX domain socket bound to +socket+ file by specifiying a filename
   # as the first argument. Eg.: /tmp/thin.sock. If the first argument contains a <tt>/</tt>
-  # it will be assumed to be a UNIX socket. 
+  # it will be assumed to be a UNIX socket.
   #
   #   Thin::Server.start('/tmp/thin.sock', app)
   #
@@ -30,7 +30,7 @@ module Thin
   # == Building an app in place
   # If a block is passed, a <tt>Rack::Builder</tt> instance
   # will be passed to build the +app+. So you can do cool stuff like this:
-  # 
+  #
   #   Thin::Server.start('0.0.0.0', 3000) do
   #     use Rack::CommonLogger
   #     use Rack::ShowExceptions
@@ -44,19 +44,19 @@ module Thin
   # * QUIT: Gracefull shutdown (see Server#stop)
   # * INT and TERM: Force shutdown (see Server#stop!)
   # Disable signals by passing <tt>:signals => false</tt>
-  # 
+  #
   class Server
     include Logging
     include Daemonizable
     extend  Forwardable
-    
+
     # Default values
     DEFAULT_TIMEOUT                        = 30 #sec
     DEFAULT_HOST                           = '0.0.0.0'
     DEFAULT_PORT                           = 3000
     DEFAULT_MAXIMUM_CONNECTIONS            = 1024
     DEFAULT_MAXIMUM_PERSISTENT_CONNECTIONS = 100
-        
+
     # Application (Rack adapter) called with the request that produces the response.
     attr_accessor :app
 
@@ -65,38 +65,38 @@ module Thin
 
     # Backend handling the connections to the clients.
     attr_accessor :backend
-    
+
     # Maximum number of seconds for incoming data to arrive before the connection
     # is dropped.
     def_delegators :backend, :timeout, :timeout=
-    
+
     # Maximum number of file or socket descriptors that the server may open.
     def_delegators :backend, :maximum_connections, :maximum_connections=
-    
+
     # Maximum number of connection that can be persistent at the same time.
     # Most browser never close the connection so most of the time they are closed
     # when the timeout occur. If we don't control the number of persistent connection,
     # if would be very easy to overflow the server for a DoS attack.
     def_delegators :backend, :maximum_persistent_connections, :maximum_persistent_connections=
-    
+
     # Allow using threads in the backend.
     def_delegators :backend, :threaded?, :threaded=
-    
+
     # Allow using SSL in the backend.
     def_delegators :backend, :ssl?, :ssl=, :ssl_options=
-    
+
     # Address and port on which the server is listening for connections.
     def_delegators :backend, :host, :port
-    
+
     # UNIX domain socket on which the server is listening for connections.
     def_delegator :backend, :socket
-    
+
     # Disable the use of epoll under Linux
     def_delegators :backend, :no_epoll, :no_epoll=
-    
+
     def initialize(*args, &block)
       host, port, options = DEFAULT_HOST, DEFAULT_PORT, {}
-      
+
       # Guess each parameter by its type so they can be
       # received in any order.
       args.each do |arg|
@@ -108,58 +108,58 @@ module Thin
           @app = arg if arg.respond_to?(:call)
         end
       end
-      
+
       # Set tag if needed
       self.tag = options[:tag]
 
       # Try to intelligently select which backend to use.
       @backend = select_backend(host, port, options)
-      
+
       load_cgi_multipart_eof_fix
-      
+
       @backend.server = self
-      
+
       # Set defaults
       @backend.maximum_connections            = DEFAULT_MAXIMUM_CONNECTIONS
       @backend.maximum_persistent_connections = DEFAULT_MAXIMUM_PERSISTENT_CONNECTIONS
       @backend.timeout                        = DEFAULT_TIMEOUT
-      
+
       # Allow using Rack builder as a block
       @app = Rack::Builder.new(&block).to_app if block
-      
+
       # If in debug mode, wrap in logger adapter
       @app = Rack::CommonLogger.new(@app) if Logging.debug?
-      
+
       setup_signals unless options[:signals].class == FalseClass
     end
-    
+
     # Lil' shortcut to turn this:
-    # 
+    #
     #   Server.new(...).start
-    # 
+    #
     # into this:
-    # 
+    #
     #   Server.start(...)
-    # 
+    #
     def self.start(*args, &block)
       new(*args, &block).start!
     end
-        
+
     # Start the server and listen for connections.
     def start
       raise ArgumentError, 'app required' unless @app
-      
+
       log   ">> Thin web server (v#{VERSION::STRING} codename #{VERSION::CODENAME})"
       debug ">> Debugging ON"
       trace ">> Tracing ON"
-      
+
       log ">> Maximum connections set to #{@backend.maximum_connections}"
       log ">> Listening on #{@backend}, CTRL+C to stop"
-      
+
       @backend.start
     end
     alias :start! :start
-    
+
     # == Gracefull shutdown
     # Stops the server after processing all current connections.
     # As soon as this method is called, the server stops accepting
@@ -176,7 +176,7 @@ module Thin
         stop!
       end
     end
-    
+
     # == Force shutdown
     # Stops the server closing all current connections right away.
     # This doesn't wait for connection to finish their work and send data.
@@ -186,7 +186,7 @@ module Thin
 
       @backend.stop!
     end
-    
+
     # == Reopen log file.
     # Reopen the log file and redirect STDOUT and STDERR to it.
     def reopen_log
@@ -195,28 +195,28 @@ module Thin
       log ">> Reopening log file: #{file}"
       Daemonize.redirect_io(file)
     end
-    
+
     # == Configure the server
     # The process might need to have superuser privilege to configure
     # server with optimal options.
     def config
       @backend.config
     end
-    
+
     # Name of the server and type of backend used.
     # This is also the name of the process in which Thin is running as a daemon.
     def name
       "thin server (#{@backend})" + (tag ? " [#{tag}]" : "")
     end
     alias :to_s :name
-    
+
     # Return +true+ if the server is running and ready to receive requests.
     # Note that the server might still be running and return +false+ when
     # shuting down and waiting for active connections to complete.
     def running?
       @backend.running?
     end
-    
+
     # deamonizing kills our HUP signal, so we set them again
     def after_daemonize
       setup_signals
@@ -237,7 +237,7 @@ module Thin
           trap('USR1') { reopen_log }
         end
       end
-      
+
       def select_backend(host, port, options)
         case
         when options.has_key?(:backend)
@@ -247,16 +247,18 @@ module Thin
           Backends::SwiftiplyClient.new(host, port, options)
         when host.include?('/')
           Backends::UnixServer.new(host)
+         when options.has_key?(:reuse)
+          Backends::ReusedTcpServer.new(port) # file descriptor number
         else
           Backends::TcpServer.new(host, port)
         end
       end
-      
+
       # Taken from Mongrel cgi_multipart_eof_fix
       # Ruby 1.8.5 has a security bug in cgi.rb, we need to patch it.
       def load_cgi_multipart_eof_fix
         version = RUBY_VERSION.split('.').map { |i| i.to_i }
-        
+
         if version[0] <= 1 && version[1] <= 8 && version[2] <= 5 && RUBY_PLATFORM !~ /java/
           begin
             require 'cgi_multipart_eof_fix'
