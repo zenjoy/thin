@@ -7,12 +7,10 @@ module Thin
     MAJOR    = 1
     MINOR    = 5
     TINY     = 0
-    FORK     = 'zenjoy'
-    FORK_TINY = 0
 
-    STRING   = [MAJOR, MINOR, TINY, FORK, FORK_TINY].join('.')
+    STRING   = [MAJOR, MINOR, TINY].join('.')
 
-    CODENAME = "Knife".freeze
+    CODENAME = "Knife (forked by Zenjoy)".freeze
 
     RACK     = [1, 0].freeze # Rack protocol version
   end
